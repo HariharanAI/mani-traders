@@ -267,6 +267,8 @@ export const products = pgTable(
     unit: text("unit").notNull().default("pcs"),
     purchasePrice: money("purchase_price").notNull().default("0"),
     sellingPrice: money("selling_price").notNull().default("0"),
+    /** Moving-average cost; used for cost of goods sold and inventory valuation. */
+    avgCost: money("avg_cost").notNull().default("0"),
     gstRate: pct("gst_rate").notNull().default("0"),
     stockQty: qty("stock_qty").notNull().default("0"),
     minStock: qty("min_stock").notNull().default("0"),
@@ -408,6 +410,7 @@ export const saleItems = pgTable(
   {
     id: id(),
     saleId: uuid("sale_id").notNull().references(() => sales.id, { onDelete: "cascade" }),
+    lineNo: integer("line_no").notNull().default(1),
     productId: uuid("product_id").references(() => products.id),
     description: text("description").notNull(),
     hsnCode: text("hsn_code"),
@@ -497,6 +500,7 @@ export const purchaseItems = pgTable(
   {
     id: id(),
     purchaseId: uuid("purchase_id").notNull().references(() => purchases.id, { onDelete: "cascade" }),
+    lineNo: integer("line_no").notNull().default(1),
     productId: uuid("product_id").notNull().references(() => products.id),
     description: text("description").notNull(),
     unit: text("unit").notNull().default("pcs"),
@@ -520,8 +524,8 @@ export const payments = pgTable(
     id: id(),
     paymentNo: text("payment_no").notNull().unique(), // RC/.. for IN, PV/.. for OUT
     direction: paymentDirectionEnum("direction").notNull(),
-    partyType: partyTypeEnum("party_type").notNull(),
-    partyId: uuid("party_id").notNull(),
+    partyType: partyTypeEnum("party_type"), // null = walk-in customer (cash sale)
+    partyId: uuid("party_id"),
     paymentDate: date("payment_date").notNull(),
     amount: money("amount").notNull(),
     method: paymentMethodEnum("method").notNull(),
