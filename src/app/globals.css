@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------
+   MANI TRADERS design tokens
+   Calm neutral surfaces, one deep-teal brand accent, and two semantic
+   ledger colours used consistently everywhere:
+     --get  (rose)    : money the business will GET (customer owes us)
+     --give (emerald) : money received / we owe (YOU'LL GIVE / settled)
+------------------------------------------------------------------- */
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f3f4f2;
+  --surface-3: #eceeeb;
+  --border: #e4e6e2;
+  --border-strong: #d3d6d1;
+  --fg: #111613;
+  --fg-muted: #5d665f;
+  --fg-subtle: #8a928b;
+  --brand: #0f6b5e;
+  --brand-fg: #ffffff;
+  --brand-soft: #e3f1ee;
+  --brand-hover: #0c5a4f;
+  --get: #c2334a;
+  --get-soft: #fbeaed;
+  --give: #13795b;
+  --give-soft: #e2f4ec;
+  --warn: #b45309;
+  --warn-soft: #fdf2e1;
+  --info: #2563eb;
+  --info-soft: #e8efff;
+  --ring: #0f6b5e55;
+  --shadow: 0 1px 2px rgb(16 24 20 / 0.04), 0 1px 3px rgb(16 24 20 / 0.06);
+  --shadow-lg: 0 10px 30px -10px rgb(16 24 20 / 0.18), 0 2px 6px rgb(16 24 20 / 0.06);
+  --chart-1: #0a8f7c;
+  --chart-2: #d97706;
+  --chart-3: #6366f1;
+  --chart-grid: #e8eae6;
+}
+
+.dark {
+  --bg: #0b0f0d;
+  --surface: #121815;
+  --surface-2: #171e1a;
+  --surface-3: #1e2621;
+  --border: #232c27;
+  --border-strong: #2f3a34;
+  --fg: #eef2ef;
+  --fg-muted: #a3ada6;
+  --fg-subtle: #74807a;
+  --brand: #2bb39c;
+  --brand-fg: #04140f;
+  --brand-soft: #12322b;
+  --brand-hover: #3cc7af;
+  --get: #f0718a;
+  --get-soft: #3a1820;
+  --give: #3dcf98;
+  --give-soft: #0f3326;
+  --warn: #f2a33a;
+  --warn-soft: #3a2a10;
+  --info: #7aa2ff;
+  --info-soft: #172446;
+  --ring: #2bb39c66;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 32px -12px rgb(0 0 0 / 0.7);
+  --chart-1: #16947e;
+  --chart-2: #c98114;
+  --chart-3: #7377ee;
+  --chart-grid: #222b26;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-subtle: var(--fg-subtle);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-hover: var(--brand-hover);
+  --color-get: var(--get);
+  --color-get-soft: var(--get-soft);
+  --color-give: var(--give);
+  --color-give-soft: var(--give-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: "Inter", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, "Noto Sans", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+  --animate-in: fade-in 160ms ease-out;
+  --animate-up: slide-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@layer base {
+  * { border-color: var(--border); }
+  html { -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--brand-soft); }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.6; cursor: pointer; }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+}
+
+@utility tnum { font-variant-numeric: tabular-nums; }
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.page-enter { animation: slide-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.skeleton { position: relative; overflow: hidden; background: var(--surface-3); border-radius: 0.5rem; }
+.skeleton::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  animation: shimmer 1.4s infinite;
+}
+.dark .skeleton::after { background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.05), transparent); }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+}
