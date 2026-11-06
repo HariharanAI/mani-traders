@@ -237,7 +237,9 @@ export async function getPayment(db: Executor, actor: Actor, id: string) {
     .leftJoin(s.users, eq(s.users.id, s.payments.createdBy))
     .where(eq(s.payments.id, id));
   if (!row) throw notFound("Payment");
-  const party = await assertPartyAccess(db, actor, { type: row.p.partyType, id: row.p.partyId });
+  let party: { name: string; mobile?: string | null; whatsapp?: string | null; id: string } | null = null;
+  if (row.p.partyType && row.p.partyId) party = await assertPartyAccess(db, actor, { type: row.p.partyType, id: row.p.partyId });
+  else assertCan(actor, "sales.view"); // walk-in cash sale payment
   let sale = null;
   if (row.p.saleId) [sale] = await db.select().from(s.sales).where(eq(s.sales.id, row.p.saleId));
   let purchase = null;
