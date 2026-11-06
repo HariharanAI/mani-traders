@@ -25,7 +25,7 @@ export async function createDb(opts: { url?: string; dir?: string; memory?: bool
   let close: () => Promise<void>;
   const url = opts.memory ? undefined : opts.url;
   if (url) {
-    const { Pool } = await import("pg");
+    const { Pool, Client } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");
     // Serverless (Vercel) functions should hold very few connections; use the provider's pooled URL.
     const pool = new Pool({ connectionString: url, max: Number(process.env.DB_POOL_MAX ?? (process.env.VERCEL ? 3 : 10)), idleTimeoutMillis: 10_000 });
@@ -33,13 +33,17 @@ export async function createDb(opts: { url?: string; dir?: string; memory?: bool
     close = () => pool.end();
     if (opts.migrate !== false) {
       // Serialise migrations across concurrent cold starts with a session advisory lock.
-      const conn = await pool.connect();
+      // Session locks need a direct connection: transaction-mode poolers (Neon/PgBouncer)
+      // may run lock and unlock on different backends, so prefer the unpooled URL.
+      const direct = url === databaseUrl() ? process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING || url : url;
+      const conn = new Client({ connectionString: direct });
+      await conn.connect();
       try {
         await conn.query("select pg_advisory_lock(727274)");
         await runMigrations(drizzle(conn, { schema }) as unknown as DB, "pg");
       } finally {
         await conn.query("select pg_advisory_unlock(727274)").catch(() => {});
-        conn.release();
+        await conn.end();
       }
     }
     return { db, close };

@@ -23,7 +23,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const db = await getDb();
   const settings = await getSettingsRow(db);
   const [backups, balances, cashEntries] = await Promise.all([listBackups(), moneyBalances(db), listCashEntries(db)]);
-  const appUrl = process.env.APP_URL || "";
+  const appUrl = process.env.APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "");
   return (
     <>
       <PageHeader

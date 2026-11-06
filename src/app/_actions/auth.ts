@@ -67,7 +67,7 @@ export async function forgotPasswordAction(_: unknown, form: FormData): Promise<
     const db = await getDb();
     const res = await createResetToken(db, email);
     if (res) {
-      const base = process.env.APP_URL || `http://${(await headers()).get("host")}`;
+      const base = process.env.APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : `http://${(await headers()).get("host")}`);
       await sendResetEmail(res.user.email, res.user.name, `${base}/reset-password?token=${res.token}`);
     }
     // Same response whether or not the account exists.

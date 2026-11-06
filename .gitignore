@@ -9,3 +9,6 @@ next-env.d.ts
 /storage
 /backups
 coverage
+
+.vercel
+.env*
