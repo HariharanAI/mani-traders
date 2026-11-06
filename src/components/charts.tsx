@@ -139,7 +139,7 @@ export function MonthlyRevenueChart({ data }: { data: { label: string; revenue: 
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
-          <XAxis dataKey="label" {...axis} />
+          <XAxis dataKey="label" {...axis} minTickGap={12} interval="preserveStartEnd" />
           <YAxis {...axis} width={56} tickFormatter={(v) => formatINRCompact(v)} />
           <Tooltip cursor={{ fill: "var(--surface-2)" }} content={<ChartTooltip series={series} />} />
           <Bar dataKey="revenue" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={22} />
@@ -160,7 +160,7 @@ export function CollectionsChart({ data }: { data: { label: string; creditGiven:
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} barGap={2} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
-          <XAxis dataKey="label" {...axis} />
+          <XAxis dataKey="label" {...axis} minTickGap={12} interval="preserveStartEnd" />
           <YAxis {...axis} width={56} tickFormatter={(v) => formatINRCompact(v)} />
           <Tooltip cursor={{ fill: "var(--surface-2)" }} content={<ChartTooltip series={series} />} />
           <Bar dataKey="creditGiven" fill="var(--chart-2)" radius={[4, 4, 0, 0]} maxBarSize={14} />

@@ -56,7 +56,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {/* Position (as of now) */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Total receivables" value={m.receivables} tone="get" icon={ArrowDownLeft} hint={`${m.customersOwing} customers owe you`} href="/customers?status=owes" />
+        <StatCard label="Total receivables" value={m.receivables} tone="get" icon={ArrowDownLeft} hint={m.customersOwing === 1 ? "1 customer owes you" : `${m.customersOwing} customers owe you`} href="/customers?status=owes" />
         <StatCard label="Total payables" value={m.payables} tone="give" icon={ArrowUpRight} hint="Owed to suppliers" href="/suppliers?status=owes" />
         <StatCard label="Overdue credit" value={m.overdue} tone="warn" icon={CalendarClock} hint={`No payment in ${d.creditPeriodDays}+ days`} href="/reports/customer-outstanding" />
         <StatCard label="Inventory value" value={m.inventoryValue} icon={Boxes} hint={m.lowStockCount ? `${m.lowStockCount} products low on stock` : "At average cost"} href="/inventory" />

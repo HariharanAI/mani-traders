@@ -1,4 +1,3 @@
-"use client";
 /**
  * MANI TRADERS UI primitives. Small, consistent, accessible.
  */
@@ -89,10 +88,18 @@ export function MoneyInput({ value, onChange, className, autoFocus, size = "md",
 }
 
 export function Field({ label, error, hint, children, className, required, htmlFor }: { label?: React.ReactNode; error?: string; hint?: React.ReactNode; children: React.ReactNode; className?: string; required?: boolean; htmlFor?: string }) {
+  const autoId = React.useId();
+  // Link the label to a single child control automatically (accessible names, clickable labels).
+  let id = htmlFor;
+  if (!id && React.isValidElement(children)) {
+    const props = children.props as { id?: string };
+    id = props.id ?? autoId;
+    if (!props.id) children = React.cloneElement(children as React.ReactElement<{ id?: string }>, { id });
+  }
   return (
     <div className={cn("space-y-1.5", className)}>
       {label ? (
-        <label htmlFor={htmlFor} className="block text-[13px] font-medium text-fg">
+        <label htmlFor={id} className="block text-[13px] font-medium text-fg">
           {label}
           {required ? <span className="text-get"> *</span> : null}
         </label>

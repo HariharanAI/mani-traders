@@ -229,7 +229,7 @@ export function AppShell({ user, permissions, business, unread, categories, gstE
             </button>
           </div>
         </nav>
-        {quickItems.length ? (
+        {quickItems.length && !/^\/(customers\/[^/]+|sales\/new|purchases\/new|settings)/.test(pathname) ? (
           <button onClick={() => setQuickOpen(true)} className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-30 grid size-14 place-items-center rounded-2xl bg-brand text-brand-fg shadow-pop transition-transform active:scale-95 lg:hidden" aria-label="Quick actions">
             <Plus className="size-6" />
           </button>

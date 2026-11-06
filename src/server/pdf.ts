@@ -49,10 +49,14 @@ function footer(doc: Doc, settings: Settings, label: string) {
   const range = doc.bufferedPageRange();
   for (let i = range.start; i < range.start + range.count; i++) {
     doc.switchToPage(i);
+    // Writing inside the bottom margin would trigger an automatic page break.
+    const savedBottom = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
     const y = doc.page.height - 28;
     doc.font("R").fontSize(7).fillColor(MUTED);
     doc.text(`${settings.businessName} · ${label}`, 36, y, { width: 300, lineBreak: false });
     doc.text(`Page ${i - range.start + 1} of ${range.count}`, doc.page.width - 136, y, { width: 100, align: "right", lineBreak: false });
+    doc.page.margins.bottom = savedBottom;
   }
 }
 

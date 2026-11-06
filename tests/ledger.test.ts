@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import * as s from "@/server/db/schema";
 import { setupDb, key, trialBalance, subledgerMismatches } from "./helpers";
-import { createCustomer, createSupplier, partySummary, listCustomers, deleteCustomer, archiveCustomer } from "@/server/services/parties";
+import { createCustomer, createSupplier, partySummary, listCustomers, deleteCustomer, archiveCustomer, customerTotals, listSuppliers } from "@/server/services/parties";
 import { addKhataEntry, reverseKhataEntry, partyStatement } from "@/server/services/khata";
 import { recordPayment, reversePayment } from "@/server/services/payments";
 import { createProduct, adjustStock, getProduct } from "@/server/services/inventory";
@@ -10,6 +10,7 @@ import { createPurchase, cancelPurchase } from "@/server/services/purchases";
 import { createSale, cancelSale, createSaleReturn, getSale } from "@/server/services/sales";
 import { createExpense, updateExpense, voidExpense } from "@/server/services/expenses";
 import { partyBalance } from "@/server/core";
+import { addCashEntry, moneyBalances } from "@/server/services/cashbook";
 import type { DB } from "@/server/db/client";
 import type { Actor } from "@/server/core";
 import { toMilli, toPaise } from "@/lib/money";
@@ -43,6 +44,12 @@ describe("customer khata", () => {
     expect(sum.received).toBe(200000);
     expect(sum.balance).toBe(600000);
     expect(await partyBalance(db, party)).toBe(600000);
+    // list + totals queries (correlated subqueries) must agree with the journal
+    const list = await listCustomers(db, actor, { q: "Ravi" });
+    expect(list.rows[0]).toMatchObject({ given: 800000, received: 200000, balance: 600000 });
+    const totals = await customerTotals(db, actor);
+    expect(totals.receivable).toBe(600000);
+    expect(totals.owing).toBe(1);
     const st = await partyStatement(db, actor, party);
     expect(st.rows.map((r) => r.running)).toEqual([500000, 300000, 600000]);
     await assertBooksBalance();
@@ -206,6 +213,20 @@ describe("stock & expenses", () => {
     await voidExpense(db, actor, expense.id, "Entered by mistake");
     tb = await trialBalance(db);
     expect((tb.map.get("6002") ?? 0) - (tbBefore.map.get("6002") ?? 0)).toBe(0);
+    await assertBooksBalance();
+  });
+});
+
+describe("cash & bank", () => {
+  it("records opening cash, capital, drawings and transfers", async () => {
+    const before = new Map((await moneyBalances(db)).map((b) => [b.code, b.balance]));
+    await addCashEntry(db, actor, { kind: "OPENING", account: "CASH", amount: "10000", date: "2026-11-01" });
+    await addCashEntry(db, actor, { kind: "TRANSFER", account: "CASH", toAccount: "BANK", amount: "4000", date: "2026-11-02" });
+    await addCashEntry(db, actor, { kind: "DRAWINGS", account: "BANK", amount: "500", date: "2026-11-03" });
+    const after = new Map((await moneyBalances(db)).map((b) => [b.code, b.balance]));
+    expect(after.get("1000")! - before.get("1000")!).toBe(600000);
+    expect(after.get("1010")! - before.get("1010")!).toBe(350000);
+    await expect(addCashEntry(db, actor, { kind: "TRANSFER", account: "CASH", toAccount: "CASH", amount: "1", date: "2026-11-03" })).rejects.toThrow(/same/);
     await assertBooksBalance();
   });
 });

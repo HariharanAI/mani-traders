@@ -51,7 +51,10 @@ export async function assertPartyAccess(db: Executor, actor: Actor, party: Party
 }
 
 // ---------------------------------------------------------------- balance aggregates
-const ltAgg = (partyType: "CUSTOMER" | "SUPPLIER", partyIdCol: SQL | typeof s.customers.id | typeof s.suppliers.id) => ({
+// NOTE: correlated subqueries must reference the outer table explicitly. Drizzle renders bare
+// column names ("id") when a query has a single table, which would bind to ledger_transactions.id.
+const OUTER_ID = { CUSTOMER: sql.raw('"customers"."id"'), SUPPLIER: sql.raw('"suppliers"."id"') };
+const ltAgg = (partyType: "CUSTOMER" | "SUPPLIER", partyIdCol: SQL) => ({
   given: sql<string>`coalesce((select sum(lt.balance_effect) from ledger_transactions lt where lt.party_type = ${partyType} and lt.party_id = ${partyIdCol} and lt.status = 'ACTIVE' and lt.balance_effect > 0), 0)`,
   received: sql<string>`coalesce((select -sum(lt.balance_effect) from ledger_transactions lt where lt.party_type = ${partyType} and lt.party_id = ${partyIdCol} and lt.status = 'ACTIVE' and lt.balance_effect < 0), 0)`,
   balance: sql<string>`coalesce((select sum(lt.balance_effect) from ledger_transactions lt where lt.party_type = ${partyType} and lt.party_id = ${partyIdCol}), 0)`,
@@ -72,7 +75,7 @@ export type PartyListFilter = {
 
 export async function listCustomers(db: Executor, actor: Actor, f: PartyListFilter = {}) {
   assertCan(actor, "customers.view");
-  const agg = ltAgg("CUSTOMER", s.customers.id);
+  const agg = ltAgg("CUSTOMER", OUTER_ID.CUSTOMER);
   const q = f.q?.trim();
   const where = and(
     customerScope(actor),
@@ -114,7 +117,7 @@ export async function listCustomers(db: Executor, actor: Actor, f: PartyListFilt
 }
 
 export async function customerTotals(db: Executor, actor: Actor) {
-  const agg = ltAgg("CUSTOMER", s.customers.id);
+  const agg = ltAgg("CUSTOMER", OUTER_ID.CUSTOMER);
   const sub = db
     .select({ balance: agg.balance.as("balance") })
     .from(s.customers)
@@ -138,7 +141,7 @@ export async function customerCategories(db: Executor): Promise<string[]> {
 
 export async function listSuppliers(db: Executor, actor: Actor, f: PartyListFilter = {}) {
   assertCan(actor, "suppliers.view");
-  const agg = ltAgg("SUPPLIER", s.suppliers.id);
+  const agg = ltAgg("SUPPLIER", OUTER_ID.SUPPLIER);
   const q = f.q?.trim();
   const where = and(
     f.archived ? isNotNull(s.suppliers.archivedAt) : isNull(s.suppliers.archivedAt),
@@ -163,7 +166,7 @@ export async function listSuppliers(db: Executor, actor: Actor, f: PartyListFilt
 }
 
 export async function supplierTotals(db: Executor) {
-  const agg = ltAgg("SUPPLIER", s.suppliers.id);
+  const agg = ltAgg("SUPPLIER", OUTER_ID.SUPPLIER);
   const sub = db.select({ balance: agg.balance.as("balance") }).from(s.suppliers).where(isNull(s.suppliers.archivedAt)).as("x");
   const [r] = await db
     .select({

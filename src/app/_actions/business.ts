@@ -290,3 +290,12 @@ export async function markNotificationsReadAction(ids: string[] | "all") {
     refresh("/notifications");
   });
 }
+
+// ---------------------------------------------------------------- cash & bank
+export async function addCashEntryAction(input: unknown) {
+  return runAction(["settings.manage"], async (a) => {
+    const { addCashEntry } = await import("@/server/services/cashbook");
+    await addCashEntry(await getDb(), a, input);
+    refresh("/settings", "/reports/cash-flow");
+  });
+}

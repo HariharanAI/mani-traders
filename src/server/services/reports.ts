@@ -558,7 +558,7 @@ export async function buildReport(db: Executor, actor: Actor, key: ReportKey, r:
         .innerJoin(s.journalEntries, eq(s.journalEntries.id, s.journalEntryLines.journalEntryId))
         .where(and(inArray(s.ledgerAccounts.code, MONEY_ACCOUNT_CODES), gte(s.journalEntries.entryDate, r.from), lte(s.journalEntries.entryDate, r.to)))
         .groupBy(s.journalEntries.sourceType, s.ledgerAccounts.code);
-      const label: Record<string, string> = { PAYMENT: "Payments (customers & suppliers)", SALE: "Walk-in cash sales", SALE_RETURN: "Walk-in refunds", EXPENSE: "Expenses", LEDGER: "Khata entries", OPENING: "Opening balances", STOCK: "Stock", PURCHASE: "Purchases" };
+      const label: Record<string, string> = { MONEY: "Owner capital, drawings & transfers", PAYMENT: "Payments (customers & suppliers)", SALE: "Walk-in cash sales", SALE_RETURN: "Walk-in refunds", EXPENSE: "Expenses", LEDGER: "Khata entries", OPENING: "Opening balances", STOCK: "Stock", PURCHASE: "Purchases" };
       const acct: Record<string, string> = { "1000": "Cash", "1010": "Bank", "1020": "UPI", "1030": "Other" };
       const out = rows.map((x) => ({ source: label[x.source] ?? x.source, account: acct[x.code], inflow: toPaise(x.inflow), outflow: toPaise(x.outflow), net: toPaise(x.inflow) - toPaise(x.outflow) }));
       const openingMap = await glMovement(db, MONEY_ACCOUNT_CODES, { to: addDays(r.from, -1) });
@@ -681,8 +681,8 @@ export async function buildReport(db: Executor, actor: Actor, key: ReportKey, r:
         rows: out,
         totals: { code: "Total", debit: dr, credit: cr },
         summary: [
-          { label: dr === cr ? "Ledger balanced ✓" : "LEDGER OUT OF BALANCE", value: dr - cr, kind: "money", tone: dr === cr ? "pos" : "neg" },
-          { label: mm === 0 ? "Party ledgers match ✓" : "Party ledger mismatches", value: mm, kind: "number", tone: mm === 0 ? "pos" : "neg" },
+          { label: dr === cr ? "Ledger balanced (debits = credits)" : "LEDGER OUT OF BALANCE", value: dr - cr, kind: "money", tone: dr === cr ? "pos" : "neg" },
+          { label: mm === 0 ? "Party ledgers match control accounts" : "Party ledger mismatches", value: mm, kind: "number", tone: mm === 0 ? "pos" : "neg" },
           { label: "Inventory: ledger − stock valuation", value: invGL - inv.value, kind: "money" },
         ],
         note: "Debits must equal credits. Each customer/supplier khata must equal its control-account balance. A small inventory difference can arise from average-cost rounding or negative stock.",

@@ -1,5 +1,8 @@
 import { BookOpenText, ShieldCheck } from "lucide-react";
 
+// Auth pages read the database (first-run check): never prerender them at build time.
+export const dynamic = "force-dynamic";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1fr_1.1fr]">

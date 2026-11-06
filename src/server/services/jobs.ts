@@ -9,7 +9,8 @@ import { spawn } from "node:child_process";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import type { DB } from "../db/client";
 import * as s from "../db/schema";
-import { getSettingsRow, type Actor } from "../core";
+import { AppError, getSettingsRow, type Actor } from "../core";
+import { databaseUrl } from "../db/client";
 import { PERMISSIONS } from "@/lib/permissions";
 import { formatINR, toPaise } from "@/lib/money";
 import { addDays, formatDate, todayIST } from "@/lib/dates";
@@ -62,7 +63,8 @@ export async function runDailyJobs(db: DB, opts: { force?: boolean } = {}) {
 
   // 3) Backup
   let backup: string | null = null;
-  if (settings.backupEnabled) {
+  // On Vercel there is no persistent disk or pg_dump: rely on the Postgres provider's backups (e.g. Neon point-in-time restore).
+  if (settings.backupEnabled && !process.env.VERCEL) {
     try {
       backup = await createBackup(db);
     } catch (e) {
@@ -75,18 +77,20 @@ export async function runDailyJobs(db: DB, opts: { force?: boolean } = {}) {
 
 // ---------------------------------------------------------------- backups
 export function backupDir() {
-  return path.resolve(process.env.BACKUP_DIR || "./backups");
+  return path.resolve(/*turbopackIgnore: true*/ process.env.BACKUP_DIR || "./backups");
 }
 
 export async function createBackup(db: DB): Promise<string> {
+  if (process.env.VERCEL) throw new AppError("On Vercel, backups are handled by your Postgres provider (e.g. Neon point-in-time restore). See README → Deploying to Vercel.");
   const dir = backupDir();
-  await fs.mkdir(dir, { recursive: true });
+  await fs.mkdir(/*turbopackIgnore: true*/ dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:T]/g, "-").slice(0, 16);
   let file: string;
-  if (process.env.DATABASE_URL) {
+  const url = databaseUrl();
+  if (url) {
     file = path.join(dir, `mani-traders-${stamp}.dump`);
     await new Promise<void>((resolve, reject) => {
-      const p = spawn("pg_dump", ["--format=custom", "--no-owner", `--file=${file}`, process.env.DATABASE_URL!], { stdio: ["ignore", "ignore", "pipe"] });
+      const p = spawn("pg_dump", ["--format=custom", "--no-owner", `--file=${file}`, url], { stdio: ["ignore", "ignore", "pipe"] });
       let err = "";
       p.stderr.on("data", (d) => (err += d));
       p.on("error", (e) => reject(new Error(`pg_dump not available: ${e.message}`)));
@@ -96,16 +100,16 @@ export async function createBackup(db: DB): Promise<string> {
     const client = (db as unknown as { $client: { dumpDataDir: (c?: "gzip" | "none") => Promise<Blob> } }).$client;
     const blob = await client.dumpDataDir("gzip");
     file = path.join(dir, `mani-traders-${stamp}.pglite.tar.gz`);
-    await fs.writeFile(file, Buffer.from(await blob.arrayBuffer()));
+    await fs.writeFile(/*turbopackIgnore: true*/ file, Buffer.from(await blob.arrayBuffer()));
   }
   const settings = await getSettingsRow(db);
   await db.update(s.businessSettings).set({ lastBackupAt: new Date() }).where(eq(s.businessSettings.id, 1));
   // retention
   const cutoff = Date.now() - settings.backupRetentionDays * 86400000;
-  for (const f of await fs.readdir(dir)) {
+  for (const f of await fs.readdir(/*turbopackIgnore: true*/ dir)) {
     if (!f.startsWith("mani-traders-")) continue;
-    const st = await fs.stat(path.join(dir, f));
-    if (st.mtimeMs < cutoff) await fs.unlink(path.join(dir, f));
+    const st = await fs.stat(/*turbopackIgnore: true*/ path.join(/*turbopackIgnore: true*/ dir, f));
+    if (st.mtimeMs < cutoff) await fs.unlink(/*turbopackIgnore: true*/ path.join(/*turbopackIgnore: true*/ dir, f));
   }
   return path.basename(file);
 }
@@ -113,8 +117,8 @@ export async function createBackup(db: DB): Promise<string> {
 export async function listBackups() {
   const dir = backupDir();
   try {
-    const files = (await fs.readdir(dir)).filter((f) => f.startsWith("mani-traders-"));
-    const out = await Promise.all(files.map(async (f) => ({ name: f, size: (await fs.stat(path.join(dir, f))).size, at: (await fs.stat(path.join(dir, f))).mtime })));
+    const files = (await fs.readdir(/*turbopackIgnore: true*/ dir)).filter((f) => f.startsWith("mani-traders-"));
+    const out = await Promise.all(files.map(async (f) => ({ name: f, size: (await fs.stat(/*turbopackIgnore: true*/ path.join(/*turbopackIgnore: true*/ dir, f))).size, at: (await fs.stat(/*turbopackIgnore: true*/ path.join(/*turbopackIgnore: true*/ dir, f))).mtime })));
     return out.sort((a, b) => b.at.getTime() - a.at.getTime());
   } catch {
     return [];

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Bell, Building2, Check, CircleCheck, CircleX, Database, FileText, MessageCircle, Percent, SlidersHorizontal, Upload } from "lucide-react";
+import { Wallet, Bell, Building2, Check, CircleCheck, CircleX, Database, FileText, MessageCircle, Percent, SlidersHorizontal, Upload } from "lucide-react";
 import { Badge, Button, Card, CardHeader, Field, Input, MoneyInput, Segmented, Select, Switch, Textarea } from "@/components/ui";
 import { FileAttach } from "@/components/forms";
 import { useAction } from "@/components/hooks";
@@ -56,6 +56,7 @@ const TABS = [
   { key: "gst", label: "GST & tax", icon: Percent },
   { key: "invoice", label: "Invoices", icon: FileText },
   { key: "prefs", label: "Preferences", icon: SlidersHorizontal },
+  { key: "cash", label: "Cash & bank", icon: Wallet },
   { key: "whatsapp", label: "WhatsApp", icon: MessageCircle },
   { key: "notifications", label: "Notifications", icon: Bell },
   { key: "data", label: "Data & backup", icon: Database },
@@ -73,6 +74,7 @@ export function SettingsForm({
   notificationTypes,
   backups,
   storage,
+  cashbook,
 }: {
   settings: S;
   initialTab?: string;
@@ -82,6 +84,7 @@ export function SettingsForm({
   notificationTypes: { key: string; label: string }[];
   backups: { name: string; size: number; at: string }[];
   storage: { driver: string; db: string };
+  cashbook: React.ReactNode;
 }) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -280,6 +283,8 @@ export function SettingsForm({
           </Card>
         ) : null}
 
+        {tab === "cash" ? cashbook : null}
+
         {tab === "whatsapp" ? (
           <Card>
             <CardHeader title="WhatsApp integration" />
@@ -372,7 +377,7 @@ export function SettingsForm({
           </Card>
         ) : null}
 
-        <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] z-10 flex justify-end rounded-xl border border-border bg-surface/95 p-3 shadow-pop backdrop-blur lg:bottom-4">
+        <div className={cn("sticky bottom-[calc(64px+env(safe-area-inset-bottom))] z-10 flex justify-end rounded-xl border border-border bg-surface/95 p-3 shadow-pop backdrop-blur lg:bottom-4", tab === "cash" && "hidden")}>
           <Button onClick={submit} loading={save.pending}>
             <Check /> Save settings
           </Button>

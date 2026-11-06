@@ -5,10 +5,14 @@ import { getDb } from "@/server/db";
 import { getSettingsRow } from "@/server/core";
 import { cloudConfigured, MESSAGE_TYPES } from "@/server/services/whatsapp";
 import { listBackups } from "@/server/services/jobs";
+import { storageDriverName } from "@/server/storage";
+import { databaseUrl } from "@/server/db/client";
 import { NOTIFICATION_TYPES } from "@/server/services/notifications";
 import { PageHeader } from "@/components/page";
 import { Button } from "@/components/ui";
 import { SettingsForm } from "./client";
+import { CashBook } from "./cashbook";
+import { listCashEntries, moneyBalances } from "@/server/services/cashbook";
 import { financialYear, todayIST } from "@/lib/dates";
 
 export const metadata = { title: "Settings" };
@@ -18,7 +22,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const db = await getDb();
   const settings = await getSettingsRow(db);
-  const backups = await listBackups();
+  const [backups, balances, cashEntries] = await Promise.all([listBackups(), moneyBalances(db), listCashEntries(db)]);
   const appUrl = process.env.APP_URL || "";
   return (
     <>
@@ -43,7 +47,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         messageTypes={MESSAGE_TYPES.map((m) => ({ key: m.key, label: m.label, params: m.params }))}
         notificationTypes={NOTIFICATION_TYPES.map((n) => ({ key: n.key, label: n.label }))}
         backups={backups.map((b) => ({ name: b.name, size: b.size, at: b.at.toISOString() }))}
-        storage={{ driver: process.env.STORAGE_DRIVER === "s3" ? "S3-compatible" : "Local disk", db: process.env.DATABASE_URL ? "PostgreSQL" : "Embedded PostgreSQL (PGlite)" }}
+        cashbook={<CashBook balances={balances} entries={cashEntries} />}
+        storage={{ driver: storageDriverName(), db: databaseUrl() ? "PostgreSQL" : "Embedded PostgreSQL (PGlite)" }}
       />
     </>
   );
